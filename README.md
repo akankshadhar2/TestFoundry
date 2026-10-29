@@ -1,151 +1,310 @@
-# AI-generated test doubles, verified against the real service
+# TestFoundry
 
-Claude generates test fixtures and an in-memory fake of Stripe from a few real recordings. Your
-tests run in milliseconds against the fake. The same tests then run against real Stripe test mode,
-which shows where the AI guessed wrong, and Claude repairs the fake using the real responses as the
-source of truth.
+**AI writes a fake Stripe so your tests run instantly. Real Stripe checks the AI's work, and the AI fixes its own mistakes.**
 
-The full design is in [`docs/DESIGN.md`](docs/DESIGN.md), and the presenter script is in [`DEMO.md`](DEMO.md).
+TestFoundry is a live demo of one idea: *AI makes test doubles fast and cheap, and integration
+tests against the real service keep them honest.*
 
-## Setup
+- 🎬 Presenter script: [`DEMO.md`](DEMO.md)
+- 📐 Full design: [`docs/DESIGN.md`](docs/DESIGN.md)
+- ▶️ Recorded run: open [`docs/demo_video.html`](docs/demo_video.html) in a browser and press Play
 
-1. **Stripe:** create a free account at <https://dashboard.stripe.com/register>. Switch to
-   **test mode**, open *Developers → API keys* and copy the **secret key** (`sk_test_...`).
-   Live keys are refused everywhere.
-2. **Claude**, either way:
-   - **Free with a Claude subscription:** install [Claude Code](https://claude.com/claude-code) and log in
-     once (run `claude`). Leave `ANTHROPIC_API_KEY` empty and the scripts call `claude -p`.
-   - **Anthropic API (paid, a few cents per run):** create a key at <https://console.anthropic.com>.
-3. Install (Python 3.10+):
-   ```bash
-   python -m venv .venv && source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-4. `cp .env.example .env` and fill in `STRIPE_TEST_KEY` (and `ANTHROPIC_API_KEY` only if you use the API).
-5. Run `python preflight.py`.
+---
 
-Keys are read from the environment or `.env` (gitignored). They are never printed and never sent
-to Claude, and `client_secret` values are stripped from everything that goes to Claude.
+## What it does
 
-## Commands
+Tests that call a real payment service are slow, need the network and need keys. A fake
+(an in-memory stand-in for the service) is fast, but writing a faithful fake by hand takes days, and
+a fake that's wrong makes your tests lie.
 
-| Step | Command | What it does |
+TestFoundry shows the whole loop:
+
+```
+ real Stripe ──record 3 calls──▶ examples
+                                    │
+                         Claude writes 9 test fixtures   (what each scenario should return)
+                                    │
+                         Claude writes a fake Stripe     (pure Python, no network)
+                                    │
+      tests vs fake ──▶ 15 green in 0.03 s     ✅ fast
+                                    │
+      tests vs real Stripe ──▶ red where the AI guessed wrong   ❌ caught
+                                    │
+                         real answers replace the wrong fixtures,
+                         Claude repairs the fake
+                                    │
+      tests vs fake ✅ and vs real Stripe ✅            fast AND correct
+```
+
+Everything runs in **Stripe test mode** (fake money). Live keys are refused.
+
+---
+
+## What you need
+
+| | Cost | Where |
 |---|---|---|
-| Pre | `python preflight.py [--no-ping]` | Checklist: Python, packages, keys, Stripe and Claude reachable, backups, current state |
-| 0 | `python record.py [--offline]` | Records 3 real Stripe calls and prints how complex they are |
-| 1 | `python generate_fixtures.py [--only NAME] [--offline]` | Claude writes one fixture per scenario, in parallel |
-| 2 | `python generate_fake.py [--keep] [--offline]` | Claude writes `generated/stripe/fake_stripe.py`, which is validated and self-corrected |
-| opt | `python inject_flaw.py [--undo]` | Plants a realistic mistake so step 4 is guaranteed to show red |
-| 3 | `python -m pytest --backend=fake` | All tests against the fake, with no network |
-| 4 | `python -m pytest --backend=real` | The same tests against Stripe test mode; real responses are saved |
-| 5 | `python repair_fake.py` | Corrects the fixtures from the real responses, then Claude repairs the fake |
-| 6 | rerun steps 3 and 4 | Both green |
-| | `python -m pytest --backend=replay` | Contract tests against the real responses saved in rehearsal (no network) |
-| | `python reset.py [--from-backup]` | Wipes `generated/`. `--from-backup` makes it instantly demo-ready |
-| | `python save_backup.py [--yes]` | After a good rehearsal, saves the generated output as the new backup |
-| | `python tools/build_backup.py` | Rebuilds backup fixtures and sample recordings from the hand-written backup fake |
+| Mac or Linux with **Python 3.10+** | free | `python3 --version` to check |
+| **Stripe test key** (`sk_test_...`) | free | see setup step 3 |
+| **Claude**: either option | | see setup step 4 |
+| ↳ Claude Code with a Claude subscription | no extra cost (uses your plan's usage) | https://claude.com/claude-code |
+| ↳ or an Anthropic API key | a few cents per run | https://console.anthropic.com |
+
+No keys at all? You can still run the offline version (see [Try it without any keys](#try-it-without-any-keys)).
+
+---
+
+## Setup (one time, about 10 minutes)
+
+**1. Get the code**
+```bash
+git clone https://github.com/akankshadhar2/TestFoundry.git
+cd TestFoundry
+```
+
+**2. Create the Python environment**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+Your prompt now starts with `(.venv)`.
+> Every time you open a new terminal, run `source .venv/bin/activate` again inside the folder.
+> If you see `command not found: python`, this is why.
+
+**3. Get a Stripe test key (free)**
+1. Sign up at https://dashboard.stripe.com/register. You don't need any business details.
+2. Turn on **Test mode** with the toggle at the top.
+3. Go to **Developers → API keys**. Next to **Secret key**, click **Reveal** and copy it. It starts with `sk_test_`.
+
+**4. Set up Claude (pick one)**
+- **Option A, Claude Code (recommended, no API bill):** install Claude Code from
+  https://claude.com/claude-code, then run `claude` once in a terminal and log in.
+- **Option B, Anthropic API:** create a key at https://console.anthropic.com and add some credit.
+
+**5. Put your keys in `.env`**
+```bash
+cp .env.example .env
+open -e .env        # or use any text editor
+```
+Fill in, with no spaces and no quotes:
+```
+STRIPE_TEST_KEY=sk_test_xxxxxxxxxxxxxxxx
+ANTHROPIC_API_KEY=                          ← leave EMPTY for Option A (Claude Code)
+```
+`.env` is gitignored. Keys are never printed and never sent to Claude.
+
+**6. Check everything**
+```bash
+python preflight.py
+```
+✅ You want green ticks for **Claude** and **Stripe**, and **READY** at the bottom. Every warning
+comes with a `fix:` line that says what to do.
+
+---
+
+## Run the demo
+
+Run these one at a time and read what each one prints. The whole run takes about 5 minutes.
+
+```bash
+python reset.py                       # start clean
+python record.py                      # Step 0
+python generate_fixtures.py           # Step 1
+python generate_fake.py               # Step 2
+python inject_flaw.py                 # optional: plant a mistake
+python -m pytest --backend=fake       # Step 3
+python -m pytest --backend=real       # Step 4
+python repair_fake.py                 # Step 5
+python -m pytest --backend=fake       # Step 6
+python -m pytest --backend=real       # Step 6
+```
+
+### What you should see
+
+| Step | Command | Expected result |
+|---|---|---|
+| 0 | `record.py` | 3 real Stripe payments recorded, with how big they are ("39 fields, 7 levels deep") |
+| 1 | `generate_fixtures.py` | Claude writes 9 test files, in about 30 s: "9 generated by Claude" |
+| 2 | `generate_fake.py` | Claude's code appears on screen, then "fake passes every fixture" (about 1 min) |
+| opt | `inject_flaw.py` | A planted mistake: the fake now thinks a declined payment can be refunded |
+| 3 | `pytest --backend=fake` | **15 passed** in about 0.03 s, with no network |
+| 4 | `pytest --backend=real` | **Red test(s)**, e.g. "AI fixture expected: success / real Stripe did: error 400". **This is the point of the demo.** |
+| 5 | `repair_fake.py` | "fixture … corrected from real Stripe", then "Claude repaired the fake" |
+| 6 | both pytest runs | **All green** on fake and real |
+
+### After a good run
+```bash
+python save_backup.py     # save this run as the on-stage backup (in case Wi-Fi or Claude fail)
+python reset.py           # clean up before presenting
+```
+
+---
+
+## Try it without any keys
+
+```bash
+python reset.py --from-backup
+python -m pytest --backend=fake
+```
+This installs the saved backup fake and runs 15 green tests. Steps 0–2 also take `--offline` to use
+the backups instead of Stripe and Claude.
+
+---
+
+## Make a video of the demo
+
+```bash
+python tools/record_video.py
+open docs/demo_video.html
+```
+This runs the whole demo by itself and saves it as a replayable terminal video, with captions,
+play/pause and step-by-step navigation. With keys set up, it records the full demo; without keys,
+it records the offline version. For an `.mp4`, open the page, press **Cmd+Shift+5**, choose
+"Record Selected Portion", then press Play.
+
+---
+
+## If something goes wrong
+
+The demo is built not to get stuck. When Claude or the network fails, each script uses the saved
+backup and **says so**.
+
+| Problem | Fix |
+|---|---|
+| `command not found: python` | `source .venv/bin/activate` (or use `python3`) |
+| Preflight: "STRIPE_TEST_KEY is not set" | Check `.env` was saved, and the line has no spaces or quotes |
+| "STRIPE_TEST_KEY is a LIVE key" | Turn on Test mode in Stripe and copy the `sk_test_` key |
+| Preflight: Claude ping fails | Option A: run `claude` and log in. Option B: check `ANTHROPIC_API_KEY` and credit |
+| "Every real Stripe call failed with the same error" | A setup problem (account or API change), not an AI mistake. Nothing was saved. Read Stripe's message it prints |
+| Step 4 shows no red | `python inject_flaw.py`, then rerun steps 3 and 4 |
+| No internet at step 4 | `python -m pytest --backend=replay` (uses responses saved in a previous real run) |
+| Repair can't produce a passing fake | `python generate_fake.py` (rebuilds from the corrected fixtures) |
+| Anything weird | `python reset.py --from-backup`, then continue from step 3 |
+| Claude is slow | Set `CLAUDE_EFFORT=low` in `.env`, or use `--offline` on steps 1–2 |
+
+---
+
+## All commands
+
+| Command | What it does |
+|---|---|
+| `python preflight.py [--no-ping]` | Checklist: Python, packages, keys, Stripe and Claude reachable, backups |
+| `python record.py [--offline]` | Records 3 real Stripe calls |
+| `python generate_fixtures.py [--only NAME] [--offline]` | Claude writes one fixture per scenario, in parallel |
+| `python generate_fake.py [--keep] [--offline]` | Claude writes `generated/stripe/fake_stripe.py`, which is validated and self-corrected |
+| `python inject_flaw.py [--undo]` | Plants (or removes) a realistic mistake so step 4 shows red |
+| `python -m pytest --backend=fake` | All tests against the fake |
+| `python -m pytest --backend=real` | The same tests against Stripe test mode; saves the real responses |
+| `python -m pytest --backend=replay` | Contract tests against saved real responses, with no network |
+| `python repair_fake.py` | Corrects fixtures from real responses; Claude repairs the fake |
+| `python reset.py [--from-backup]` | Wipes `generated/`; `--from-backup` makes it instantly demo-ready |
+| `python save_backup.py [--yes]` | Saves the current good run as the backup |
+| `python tools/record_video.py [--offline]` | Records the demo as `docs/demo_video.html` |
+| `python tools/build_backup.py` | Rebuilds backup fixtures and samples from the hand-written backup fake |
+
+---
+
+## Project layout
+
+```
+app.py                    tiny payments app (charge, refund) that the tests exercise
+test_contract.py          every scenario vs the fixtures (works for any provider)
+test_payments.py          app tests that assert only behavior that's certain
+conftest.py               --backend=fake|real|replay, saves real responses
+record.py, generate_*.py, inject_flaw.py, repair_fake.py, reset.py, save_backup.py, preflight.py
+                          the demo steps
+providers/
+  stripe_provider.py      ALL Stripe-specific code: scenarios, prompts, real client, the planted flaw
+  _template_provider.py   copy this to demo a different service
+toolkit/                  shared code: Claude calls, validation, comparisons, terminal UI
+backup/stripe/            hand-written fake + fixtures + sample recordings (the fallbacks)
+generated/                Claude's output (gitignored, rebuilt each run)
+recordings/               your real Stripe responses (gitignored, each person records their own)
+tools/                    video recorder, backup builder
+docs/                     design doc, demo video
+```
+
+---
 
 ## How the tests stay honest
 
-- `test_contract.py` (generic) runs every scenario against the backend and compares a summary of
-  each step with the fixture. The summary for a success is ok/object/status/amount/currency, and for
-  an error it is http_status/type/code/decline_code.
-- The fixtures are Claude's *expectations*, and the fake is built from them, so the fake passes. The
-  real run is the source of truth, and it exposes every wrong expectation as an
-  "AI fixture expected X / real Stripe did Y" diff.
-- `test_payments.py` asserts only behavior that is certain (see DESIGN.md 7.3). No guessed Stripe
-  error codes are hard-coded in any test.
+- **The fixtures are Claude's guesses.** The fake is built from them, so the fake always passes.
+  That's why fast tests alone aren't enough.
+- **Real Stripe is the source of truth.** `--backend=real` runs the same scenarios against Stripe and
+  shows every wrong guess as a diff. Each step is compared on a short summary:
+  - for a success: ok, object, status, amount and currency
+  - for an error: HTTP status, type, code and decline code
+- **No guessed Stripe error codes are hard-coded in the tests.** `test_payments.py` asserts only
+  things that are certain (e.g. a declined card is declined, a second full refund fails).
+- **Claude's code is checked before it's used.** It must parse, import (in a separate process with
+  a timeout), have exactly the right class and method signatures, use only the standard library,
+  do no network or file I/O, avoid hard-coding scenario names, and pass the fake test suite. If it
+  fails, Claude gets up to 2 rounds to fix it.
+- **Broken setups are caught.** If every real Stripe call fails with the same error (a rejected
+  parameter, an account setting), nothing is saved and nothing is "corrected", so a setup problem
+  can't overwrite good fixtures.
 
-## How foolproofing works
+## Security
 
-Every step that depends on Claude or the network has a fallback. Each script prints exactly what
-happened and exits 0 whenever the demo can continue.
+- Only Stripe **test** keys are accepted. Anything containing `_live_` is refused everywhere.
+- Keys are never printed and never sent to Claude. `client_secret` values are stripped from
+  everything sent to Claude.
+- In Claude Code mode, the `claude` process is started without the Stripe key or the API key in
+  its environment, with no tools, in an empty temporary folder.
+- `.env` and `recordings/` are gitignored.
 
-| Step | If it fails | Fallback |
-|---|---|---|
-| preflight | key missing or service unreachable | Reported as a warning with its fix. The status is READY with fallbacks. Exits 1 only when the backups or pytest are broken |
-| 0 record | no key, live key, `--offline`, network/auth error | Reuses existing recordings (printing their date), else copies the backup **samples** with a loud warning |
-| 1 fixtures | Claude unavailable up front | Backup fixtures for every scenario |
-| 1 fixtures | one call fails or returns invalid JSON twice | That scenario falls back to its backup fixture. Validation problems first get one retry with the problem list |
-| 2 fake | AI fake fails validation | Up to 2 self-fix rounds. The checks are: parse, import in a subprocess, class, exact signatures, stdlib-only, no I/O, no per-scenario hard-coding, then the fake suite |
-| 2 fake | still failing, or Claude unavailable | Backup fake if it passes the current fixtures, otherwise backup fixtures **and** backup fake together (a consistent set). `--keep` keeps the AI version |
-| 4 real | no or live key, 401/403, 429, ≥500, connection error | Clean `pytest.exit` with a "use `--backend=replay`" tip. The broken record is not saved |
-| 5 repair | Claude unavailable or still failing | Strips the planted flaw block mechanically and retests, then tries the backup fake, then restores the previous fake and prints the options |
-| any | anything weird | `python reset.py --from-backup`, then continue from step 3 |
+---
 
-Claude refusals (`stop_reason: refusal`), API errors and network errors all become
-`ClaudeUnavailable`, which every script catches.
+## Demo a different service
 
-## Swapping providers
-
-Stripe-specific code lives only in `providers/stripe_provider.py` (plus `app.py`, `test_payments.py`
-and the backup fake). To demo a different service:
+Stripe-specific code lives only in `providers/stripe_provider.py` (plus `app.py`,
+`test_payments.py` and the backup fake). To swap in another service:
 
 1. Copy `providers/_template_provider.py` to `providers/<name>_provider.py` and implement
-   everything in DESIGN.md section 5. That covers scenarios, prompt text, `summarize`,
-   `resource_id`, `transport_problem`, `key_problem` (refuse live keys!), the real gateway, and the
-   flaw. Also set `GATEWAY_METHODS` to your gateway's method signatures.
-2. Replace `app.py` and `test_payments.py`, or add `test_<name>.py` with a module-level
-   `pytest.skip(..., allow_module_level=True)` when the provider doesn't match.
+   everything in DESIGN.md section 5. Also set `GATEWAY_METHODS` to your gateway's method
+   signatures, and refuse live keys in `key_problem`.
+2. Replace `app.py` and `test_payments.py`, or add `test_<name>.py` that skips itself when the
+   provider doesn't match.
 3. Set `DEMO_PROVIDER=<name>` in `.env`.
-4. Hand-write `backup/<name>/fake_<name>.py`, then run `python tools/build_backup.py` to generate
-   the backup fixtures and sample recordings from it.
+4. Hand-write `backup/<name>/fake_<name>.py`, then run `python tools/build_backup.py`.
 
-No changes are needed in `toolkit/`, `conftest.py`, `test_contract.py` or any script.
+Nothing in `toolkit/`, `conftest.py`, `test_contract.py` or the scripts needs to change.
 
-## Refreshing the backups
+---
 
-The committed backup set (`backup/stripe/`) was produced from the hand-written
-`backup/stripe/fake_stripe.py`. Its recordings are labeled `sample (not a real recording)`. Where the
-real Stripe error code was uncertain, the backup fake uses a best guess: `charge_not_refundable`
-for refunding a declined payment, `amount_too_large` for over-refunding, and 404 `resource_missing`
-for unknown ids. The real run corrects these, which is itself a legitimate demo moment.
+## Configuration (`.env`)
 
-After a good rehearsal with real keys, run `python save_backup.py`. This freezes the real
-recordings, Claude's fixtures and Claude's fake as the new backup.
+| Variable | Default | Meaning |
+|---|---|---|
+| `STRIPE_TEST_KEY` | none | Stripe test secret key (`sk_test_...` or `rk_test_...`) |
+| `ANTHROPIC_API_KEY` | empty | Set it to use the Anthropic API; leave it empty to use Claude Code |
+| `CLAUDE_BACKEND` | `auto` | `auto` uses the API if a key is set, else Claude Code. `api` and `cli` force one |
+| `CLAUDE_MODEL` | `claude-sonnet-5-5` | Model used for every Claude call |
+| `CLAUDE_EFFORT` | unset | `low` / `medium` / `high`. Lower is faster on stage |
+| `DEMO_PROVIDER` | `stripe` | Which `providers/<name>_provider.py` to use |
 
-## Troubleshooting
+---
 
-| Symptom | Fix |
-|---|---|
-| `No generated fake. Run: python generate_fake.py` | Run it, or `python reset.py --from-backup` |
-| `No real-run recording` on `--backend=replay` | Run `python -m pytest --backend=real` once during rehearsal |
-| `STRIPE_TEST_KEY is a LIVE key` | Use the **test mode** secret key (`sk_test_...`) |
-| Claude ping fails in preflight | Check `ANTHROPIC_API_KEY` and `CLAUDE_MODEL`. The demo still runs on backups |
-| Claude is slow on stage | Set `CLAUDE_EFFORT=low` in `.env`, or use the `--offline` flags |
-| Step 3 fails after a planted flaw and a regeneration | `python inject_flaw.py --undo`, or `python reset.py --from-backup` |
-| Step 4 shows no failures | `python inject_flaw.py`, then rerun steps 3 and 4 |
+## Implementation notes
 
-## Notes on the implementation (choices where the design left room)
-
-- **Layout:** the project root is this repository root, not an `ai-test-doubles-demo/` subfolder.
-  `DESIGN.md` lives in `docs/`.
-- **`toolkit/fakes.py`** (not in the design's layout) holds the shared fake helpers: loading,
-  structural validation, the self-fix loop, running the fake suite in a subprocess, and the
-  flaw-marker helpers. Claude-written code is only ever imported in a subprocess with a timeout.
-- **Two optional provider attributes**, `GATEWAY_METHODS` (the exact method signatures to check)
-  and `FAKE_REQUIREMENTS` (service-specific bullets for the fake prompt), keep the generic scripts
-  free of Stripe text. If they are missing, the DESIGN.md 4.1 payments interface is used.
-- **`real_run.json` format:** `{"provider", "recorded_at", "records": {scenario: record}}`. Each
-  record uses the common record format with `source: "real-run"`. New real runs are merged in.
-- **Extra repair fallback:** before restoring the previous fake, `repair_fake.py` also tries the
-  backup fake against the corrected fixtures.
-- **Crashing fakes:** if a fake raises something other than `GatewayError`, the step is recorded
-  as an error of type `python_exception`. A buggy fake therefore shows up as a readable diff, not a
-  traceback.
-- **Regenerating after a planted flaw:** `generate_fake.py` restores the `.preflaw` fixture first,
-  so Claude never learns the planted mistake. `generate_fixtures.py` deletes stale `.preflaw`
-  files for the scenarios it rewrites.
-- **Exit codes:** configuration problems inside pytest (no key, live key, no replay recording,
-  transport trouble) use `pytest.exit(..., returncode=4)`. `inject_flaw.py` and `repair_fake.py`
-  exit 1 only when there is nothing they can do, and they print what to run next.
-- **Claude Code backend:** `CLAUDE_BACKEND` (auto|api|cli). `auto` uses the API when
-  `ANTHROPIC_API_KEY` is set, otherwise `claude -p` (headless Claude Code, with no tools and no
-  settings, run in an empty temp folder). Its environment has the API key and every Stripe key
-  removed, so it bills the subscription and never sees a service key. At most 3 run in parallel.
-  Text still streams live. This uses the subscription's usage limits instead of API credit.
-- **Model:** `CLAUDE_MODEL`, default `claude-sonnet-5-5`. The optional `CLAUDE_EFFORT` is sent
-  only when set, so an older model never sees an unknown field.
-- **`pytest.ini`** also skips `tools`, `docs` and virtualenv folders during collection.
-- `recordings/` is persistent and not gitignored (per the design). It can contain **test-mode**
-  `client_secret` values, which are never sent to Claude.
+- **Backup set:** `backup/stripe/` was produced from the hand-written `backup/stripe/fake_stripe.py`.
+  Its recordings are labeled `sample (not a real recording)`. Where Stripe's real error code was
+  uncertain, the backup uses a best guess, and the real run corrects it. `save_backup.py` replaces
+  it with a real rehearsal run.
+- **Stripe API:** payments are created with `automatic_payment_methods` (redirects off) and
+  `confirm=True`. Newer Stripe accounts reject the older `payment_method_types` parameter.
+- **Claude backends:** both are in `toolkit/claude.py`. Every failure (no key, network, API
+  error, refusal) becomes `ClaudeUnavailable`, which every script catches before falling back. In
+  Claude Code mode, at most 3 `claude -p` processes run at once, and text still streams live.
+- **Claude-written code** is only ever imported in a subprocess with a timeout. If a fake raises
+  something other than `GatewayError`, the step is recorded as a `python_exception` error, so it
+  shows up as a readable diff, not a traceback.
+- **Planted flaw:** code between `# >>> DEMO FLAW >>>` markers, plus a `.preflaw` copy of the
+  fixture it changes. `generate_fake.py` restores that copy first, so Claude never learns the
+  planted mistake.
+- **`real_run.json`:** `{"provider", "recorded_at", "records": {scenario: record}}`. New real runs
+  are merged in.
+- **Exit codes:** configuration problems inside pytest use `pytest.exit(..., returncode=4)`.
+  Scripts exit 0 whenever the demo can continue, and they print what to run next when it can't.
+- **Python:** 3.10+. The only dependencies are `stripe`, `anthropic` and `pytest`.
