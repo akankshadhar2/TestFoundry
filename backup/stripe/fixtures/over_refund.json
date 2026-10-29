@@ -1,0 +1,89 @@
+{
+  "scenario": "over_refund",
+  "description": "Charge $20.00, then try to refund $50.00.",
+  "source": "backup",
+  "generated_at": "2026-10-29T00:05:58+00:00",
+  "steps": [
+    {
+      "call": "create_payment",
+      "args": {
+        "amount": 2000,
+        "currency": "usd",
+        "payment_method": "pm_card_visa"
+      },
+      "kind": "success",
+      "http_status": 200,
+      "body": {
+        "id": "pi_3FkGEEzLe0emKVaCsyEsOcG3",
+        "object": "payment_intent",
+        "amount": 2000,
+        "amount_capturable": 0,
+        "amount_details": {
+          "tip": {}
+        },
+        "amount_received": 2000,
+        "application": null,
+        "application_fee_amount": null,
+        "automatic_payment_methods": null,
+        "canceled_at": null,
+        "cancellation_reason": null,
+        "capture_method": "automatic_async",
+        "client_secret": "pi_3FkGEEzLe0emKVaCsyEsOcG3_secret_3FkjLJN5bZ9VmVM8vr0PmHFtb",
+        "confirmation_method": "automatic",
+        "created": 1718000002,
+        "currency": "usd",
+        "customer": null,
+        "description": null,
+        "last_payment_error": null,
+        "latest_charge": "ch_3FkputvPW0ZOyQY831MIS6gg",
+        "livemode": false,
+        "metadata": {},
+        "next_action": null,
+        "on_behalf_of": null,
+        "payment_method": "pm_3FkLP8oOCEMVdzJ3KaIOA0N6",
+        "payment_method_configuration_details": null,
+        "payment_method_options": {
+          "card": {
+            "installments": null,
+            "mandate_options": null,
+            "network": null,
+            "request_three_d_secure": "automatic"
+          }
+        },
+        "payment_method_types": [
+          "card"
+        ],
+        "processing": null,
+        "receipt_email": null,
+        "review": null,
+        "setup_future_usage": null,
+        "shipping": null,
+        "source": null,
+        "statement_descriptor": null,
+        "statement_descriptor_suffix": null,
+        "status": "succeeded",
+        "transfer_data": null,
+        "transfer_group": null
+      }
+    },
+    {
+      "call": "refund_payment",
+      "args": {
+        "payment_id": "$step0.id",
+        "amount": 5000
+      },
+      "kind": "error",
+      "http_status": 400,
+      "body": {
+        "error": {
+          "code": "amount_too_large",
+          "doc_url": "https://stripe.com/docs/error-codes/amount-too-large",
+          "message": "Refund amount ($50.00) is greater than unrefunded amount on charge ($20.00)",
+          "param": "amount",
+          "request_log_url": "https://dashboard.stripe.com/test/logs/req_3FkmhTWbaHKbeT",
+          "type": "invalid_request_error"
+        }
+      }
+    }
+  ]
+}

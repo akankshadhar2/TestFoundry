@@ -1,0 +1,305 @@
+<title>TestFoundry Demo Reel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single "screen" (terminal) with a caption strip under it, transport controls,
+   and a chaptered step list beside it on wide screens / under it on phones. */
+:root {
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --fg: #18202a;
+  --muted: #5b6776;
+  --line: #d5dce4;
+  --accent: #3559d6;          /* Stripe-adjacent indigo, kept muted */
+  --accent-soft: #e3e9fb;
+  --ok: #1f8a4c;
+  --bad: #c4372f;
+  /* the terminal is always dark, in both themes */
+  --term-bg: #0f141b;
+  --term-fg: #d6dde6;
+  --term-dim: #7b8796;
+  --t-red: #ff6b61; --t-green: #4fd47f; --t-yellow: #f2c14e; --t-blue: #6f9bff; --t-magenta: #d58bf5; --t-cyan: #4cc9d9;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0f14; --panel: #141a22; --fg: #e3e8ee; --muted: #93a0b0; --line: #26303c;
+    --accent: #8ea6ff; --accent-soft: #1d2640; --ok: #4fd47f; --bad: #ff6b61; --term-bg: #070a0e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0f14; --panel: #141a22; --fg: #e3e8ee; --muted: #93a0b0; --line: #26303c;
+  --accent: #8ea6ff; --accent-soft: #1d2640; --ok: #4fd47f; --bad: #ff6b61; --term-bg: #070a0e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+h1 { margin: 0; font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); max-width: 68ch; }
+.mode { display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+.mode b { color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.screen { min-width: 0; display: grid; gap: 0; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 1px 0 var(--line), 0 18px 40px -22px rgba(10, 20, 40, 0.45); }
+.titlebar { background: #1b222c; color: #9aa6b4; font: 500 12px/1 var(--mono); padding: 10px 14px;
+  display: flex; align-items: center; gap: 8px; }
+.titlebar i { width: 11px; height: 11px; border-radius: 50%; background: #3a4553; display: inline-block; }
+.titlebar span { margin-left: 8px; }
+.term { background: var(--term-bg); color: var(--term-fg); font: 13px/1.45 var(--mono);
+  height: min(62vh, 560px); overflow: auto; padding: 14px 16px 20px; white-space: pre; tab-size: 4; }
+.term .prompt { color: var(--t-green); }
+.term .cmd { color: #ffffff; font-weight: 600; }
+.term .cursor { display: inline-block; width: 0.6em; background: var(--term-fg); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.skip { color: var(--term-dim); font-style: italic; }
+.b { font-weight: 600; } .d { color: var(--term-dim); }
+.c31 { color: var(--t-red); } .c32 { color: var(--t-green); } .c33 { color: var(--t-yellow); }
+.c34 { color: var(--t-blue); } .c35 { color: var(--t-magenta); } .c36 { color: var(--t-cyan); }
+.c37, .c97 { color: #ffffff; } .c90 { color: var(--term-dim); }
+.c91 { color: var(--t-red); } .c92 { color: var(--t-green); } .c93 { color: var(--t-yellow); }
+.c94 { color: var(--t-blue); } .c95 { color: var(--t-magenta); } .c96 { color: var(--t-cyan); }
+.bg41 { background: #5a1f1c; } .bg42 { background: #15452a; } .bg43 { background: #55431a; }
+
+.caption { background: #000; color: #fff; font-size: 1rem; padding: 12px 18px; min-height: 3.2em;
+  display: flex; align-items: center; gap: 12px; }
+.caption .n { font: 600 12px/1 var(--mono); color: #000; background: #fff; border-radius: 3px; padding: 4px 6px; flex: none; }
+
+.transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; background: var(--panel);
+  border-top: 1px solid var(--line); }
+button { font: 500 14px/1 var(--sans); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); min-width: 92px; }
+.progress { flex: 1 1 160px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 120px; }
+.progress div { height: 100%; width: 0; background: var(--accent); transition: width 0.2s linear; }
+label { font-size: 0.85rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+select { font: 14px var(--sans); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; min-width: 0; }
+aside h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  margin: 6px 8px 8px; font-weight: 600; }
+ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+ol button { width: 100%; text-align: left; border: 0; border-radius: 6px; padding: 8px 10px; display: grid;
+  grid-template-columns: 1.6em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; background: transparent; line-height: 1.35; }
+ol button:hover { background: var(--accent-soft); }
+ol button[aria-current="step"] { background: var(--accent-soft); color: var(--accent); }
+ol .num { font: 600 12px var(--mono); color: var(--muted); }
+ol .cmdname { font: 12.5px var(--mono); overflow-wrap: anywhere; }
+ol .st { font: 600 11px var(--mono); }
+ol .st.ok { color: var(--ok); } ol .st.bad { color: var(--bad); }
+
+.note { color: var(--muted); font-size: 0.88rem; max-width: 80ch; margin: 0; }
+.note code { font-family: var(--mono); font-size: 0.85em; background: var(--panel); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; }
+.empty { padding: 40px; color: var(--term-dim); white-space: normal; font-family: var(--sans); }
+@media (prefers-reduced-motion: reduce) { .term .cursor { animation: none; } .progress div { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="mode">Recorded run <b id="mode">—</b> <span id="when"></span></span>
+    <h1>AI-built fake Stripe, checked against the real thing</h1>
+    <p class="sub">Claude writes test data and a fake Stripe so tests run instantly. Running the same tests against
+      real Stripe catches what the AI got wrong, and Claude repairs the fake from the real answers.</p>
+  </header>
+
+  <div class="stage">
+    <div class="screen">
+      <div class="titlebar"><i></i><i></i><i></i><span>~/TestFoundry — zsh</span></div>
+      <div class="term" id="term" aria-live="polite"></div>
+      <div class="caption"><span class="n" id="capn">1/1</span><span id="cap"></span></div>
+      <div class="transport">
+        <button class="primary" id="play" type="button">▶ Play</button>
+        <button id="prev" type="button" aria-label="Previous step">◀◀</button>
+        <button id="next" type="button" aria-label="Next step">▶▶</button>
+        <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+        <label for="speed">Speed
+          <select id="speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <aside>
+      <h2>Steps</h2>
+      <ol id="steps"></ol>
+    </aside>
+  </div>
+
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+const CAST = /*CAST*/null;
+const term = document.getElementById("term");
+const $ = (id) => document.getElementById(id);
+const MAX_GAP = 1.2;      // long waits (Claude thinking, network) are shortened to this, in seconds
+const TYPE_MS = 38;       // typing speed for the command
+const HOLD_MS = 2200;     // pause on the finished output before the next step
+
+/* ---- a tiny terminal: handles \r, \n, \b, SGR colors, erase-line; ignores other escapes ---- */
+function Screen() { this.lines = [[]]; this.row = 0; this.col = 0; this.style = ""; }
+Screen.prototype.write = function (text) {
+  const re = /\x1b\[([0-9;?]*)([A-Za-z])|\x1b[()][A-Z0-9]|\x1b.|[\r\n\b]|[^\x1b\r\n\b]+/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const t = m[0];
+    if (t === "\n") { this.row++; this.col = 0; if (!this.lines[this.row]) this.lines[this.row] = []; }
+    else if (t === "\r") { this.col = 0; }
+    else if (t === "\b") { this.col = Math.max(0, this.col - 1); }
+    else if (m[2] === "m") { this.sgr(m[1]); }
+    else if (m[2] === "K") { const n = m[1] || "0"; const ln = this.lines[this.row];
+      if (n === "0") ln.length = Math.min(ln.length, this.col); else if (n === "2") ln.length = 0; }
+    else if (t[0] === "\x1b") { /* cursor moves etc.: ignore */ }
+    else { const ln = this.lines[this.row];
+      for (const ch of t) { while (ln.length < this.col) ln.push([" ", ""]); ln[this.col++] = [ch, this.style]; } }
+  }
+};
+Screen.prototype.sgr = function (p) {
+  const codes = (p || "0").split(";").filter(Boolean);
+  if (!codes.length) codes.push("0");
+  let cls = new Set(this.style ? this.style.split(" ") : []);
+  for (const c of codes) {
+    const n = +c;
+    if (n === 0) cls = new Set();
+    else if (n === 1) cls.add("b");
+    else if (n === 2) cls.add("d");
+    else if (n === 22) { cls.delete("b"); cls.delete("d"); }
+    else if (n === 39) [...cls].filter((k) => /^c\d/.test(k)).forEach((k) => cls.delete(k));
+    else if ((n >= 30 && n <= 37) || (n >= 90 && n <= 97)) { [...cls].filter((k) => /^c\d/.test(k)).forEach((k) => cls.delete(k)); cls.add("c" + n); }
+    else if (n >= 41 && n <= 43) cls.add("bg" + n);
+    else if (n === 49) [...cls].filter((k) => /^bg/.test(k)).forEach((k) => cls.delete(k));
+  }
+  this.style = [...cls].join(" ");
+};
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+Screen.prototype.html = function () {
+  return this.lines.map((ln) => {
+    let out = "", cur = null, buf = "";
+    const flush = () => { if (buf) out += cur ? `<span class="${cur}">${esc(buf)}</span>` : esc(buf); buf = ""; };
+    for (const [ch, st] of ln) { if (st !== cur) { flush(); cur = st; } buf += ch; }
+    flush();
+    return out;
+  }).join("\n");
+};
+
+/* ---- player ---- */
+let idx = 0, playing = false, timer = null, token = 0;
+const steps = CAST ? CAST.steps : [];
+
+function promptHTML(cmd, typed, cursor) {
+  return `<span class="prompt">$ </span><span class="cmd">${esc(cmd.slice(0, typed))}</span>${cursor ? '<span class="cursor">&nbsp;</span>' : ""}`;
+}
+function setStep(i) {
+  idx = i;
+  $("cap").textContent = steps[i].caption;
+  $("capn").textContent = `${i + 1}/${steps.length}`;
+  document.querySelectorAll("#steps button").forEach((b, j) => {
+    if (j === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+  });
+  $("bar").style.width = `${(i / steps.length) * 100}%`;
+}
+function renderFull(i) {
+  setStep(i);
+  const s = new Screen();
+  for (const [, text] of steps[i].events) s.write(text);
+  term.innerHTML = promptHTML(steps[i].command, steps[i].command.length, false) + "\n" + s.html()
+    + "\n" + promptHTML("", 0, true);
+  term.scrollTop = term.scrollHeight;
+  $("bar").style.width = `${((i + 1) / steps.length) * 100}%`;
+}
+function speed() { return parseFloat($("speed").value) || 1; }
+function wait(ms, my) { return new Promise((res) => { timer = setTimeout(() => res(my === token), ms / speed()); }); }
+
+async function playStep(i, my) {
+  setStep(i);
+  const step = steps[i];
+  for (let k = 0; k <= step.command.length; k++) {
+    term.innerHTML = promptHTML(step.command, k, true);
+    if (!(await wait(TYPE_MS, my))) return false;
+  }
+  if (!(await wait(350, my))) return false;
+  const s = new Screen();
+  let last = 0, skipped = 0;
+  const draw = (extra) => {
+    term.innerHTML = promptHTML(step.command, step.command.length, false) + "\n" + s.html() + (extra || "");
+    term.scrollTop = term.scrollHeight;
+  };
+  draw();
+  for (const [t, text] of step.events) {
+    const gap = t - last;
+    last = t;
+    if (gap > MAX_GAP) {
+      skipped += gap - MAX_GAP;
+      draw(`<span class="skip">  ⏩ fast-forwarding ${Math.round(gap)} s of waiting</span>`);
+    }
+    if (!(await wait(Math.min(gap, MAX_GAP) * 1000, my))) return false;
+    s.write(text);
+    draw();
+    $("bar").style.width = `${((i + Math.min(1, t / Math.max(1, step.events.at(-1)?.[0] || 1))) / steps.length) * 100}%`;
+  }
+  draw("\n" + promptHTML("", 0, true));
+  $("bar").style.width = `${((i + 1) / steps.length) * 100}%`;
+  return wait(HOLD_MS, my);
+}
+
+async function play() {
+  const my = ++token;
+  playing = true; $("play").textContent = "❚❚ Pause";
+  for (let i = idx; i < steps.length; i++) {
+    if (!(await playStep(i, my))) return;
+  }
+  playing = false; $("play").textContent = "↻ Replay"; idx = 0;
+}
+function stop() { token++; clearTimeout(timer); playing = false; $("play").textContent = "▶ Play"; }
+function jump(i) { stop(); renderFull(Math.max(0, Math.min(steps.length - 1, i))); }
+
+function init() {
+  if (!steps.length) {
+    term.innerHTML = '<div class="empty">No recording embedded. Run <b>python tools/record_video.py</b> to make one.</div>';
+    $("play").disabled = true;
+    return;
+  }
+  $("mode").textContent = CAST.mode === "full" ? "full demo, real Stripe + Claude" : "offline, no API keys";
+  $("when").textContent = CAST.recorded ? "· " + CAST.recorded : "";
+  $("note").innerHTML = CAST.mode === "full"
+    ? "Long waits (Claude thinking, network calls) are fast-forwarded, and the player says when it skips. Everything else plays at real speed."
+    : "This run used no API keys, so steps 0–2 used the saved backups and step 4 (real Stripe) stops early. Add the Stripe test key to <code>.env</code> (Claude comes from Claude Code or an API key) and run <code>python tools/record_video.py</code> again to record the full demo.";
+  const ol = $("steps");
+  steps.forEach((s, i) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = `<span class="num">${i + 1}</span><span class="cmdname">${esc(s.command.replace(/^python /, ""))}</span>`
+      + `<span class="st ${s.exit === 0 ? "ok" : "bad"}">${s.exit === 0 ? "ok" : "exit " + s.exit}</span>`;
+    b.addEventListener("click", () => jump(i));
+    li.appendChild(b); ol.appendChild(li);
+  });
+  $("play").addEventListener("click", () => {
+    if (playing) { stop(); return; }
+    if ($("play").textContent.startsWith("↻")) idx = 0;
+    play();
+  });
+  $("prev").addEventListener("click", () => jump(idx - 1));
+  $("next").addEventListener("click", () => jump(idx + 1));
+  renderFull(0);
+}
+init();
+</script>

@@ -1,0 +1,28 @@
+{
+  "scenario": "below_minimum_amount",
+  "description": "Try to charge 10 cents (below the minimum charge).",
+  "source": "backup",
+  "generated_at": "2026-10-29T00:05:58+00:00",
+  "steps": [
+    {
+      "call": "create_payment",
+      "args": {
+        "amount": 10,
+        "currency": "usd",
+        "payment_method": "pm_card_visa"
+      },
+      "kind": "error",
+      "http_status": 400,
+      "body": {
+        "error": {
+          "code": "amount_too_small",
+          "doc_url": "https://stripe.com/docs/error-codes/amount-too-small",
+          "message": "Amount must be at least $0.50 usd",
+          "param": "amount",
+          "request_log_url": "https://dashboard.stripe.com/test/logs/req_3FkMRNSb3sSG8J",
+          "type": "invalid_request_error"
+        }
+      }
+    }
+  ]
+}

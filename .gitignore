@@ -1,0 +1,13 @@
+.env
+generated/
+__pycache__/
+*.prev
+*.preflaw
+*.tmp
+.venv/
+venv/
+.idea/
+.pytest_cache/
+
+# Real Stripe responses from your own account (test-mode ids/secrets): each person records their own
+recordings/
